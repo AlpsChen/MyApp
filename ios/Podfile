@@ -1,0 +1,40 @@
+# Uncomment the next line to define a global platform for your project
+# platform :ios, '9.0'
+
+target 'MyApp' do
+  # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
+  # use_frameworks!
+  pod 'Firebase/Core'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Database'
+  pod 'Firebase/Firestore'
+  pod 'Firebase/Storage'
+  #pod 'FacebookCore'
+  #pod 'FBSDKLoginKit'
+  #pod 'FBSDKCoreKit'
+  #pod 'FBSDKShareKit'
+  # Pods for MyApp
+
+  pod 'react-native-fast-image', :path => '../node_modules/react-native-fast-image'
+
+  pod 'RNSVG', :path => '../node_modules/react-native-svg'
+
+  target 'MyAppTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
+
+target 'MyApp-tvOS' do
+  # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
+  # use_frameworks!
+
+  # Pods for MyApp-tvOS
+
+  target 'MyApp-tvOSTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
