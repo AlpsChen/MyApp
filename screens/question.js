@@ -67,8 +67,7 @@ export default class QuestionPage extends Component {
     this.image = "";
     //this.marked = ["a"];
     this.state = {
-      src: "",
-      ans: "",
+      data: "",
       shownext: false,
       renew: false,
       imageHeight: 0,
@@ -199,9 +198,12 @@ export default class QuestionPage extends Component {
     this.difficulty = nxt;
   }
 
+  //determine the difficulty of the next question (according to the mode)
   determine_next() {
     let { params } = this.props.navigation.state;
     switch (params.mode) {
+
+      //adapting mode
       case 0:
         if (this.state.correct) {
           switch (this.difficulty) {
@@ -228,18 +230,26 @@ export default class QuestionPage extends Component {
           }
         }
         break;
+      
+      //random mode
       case 1:
         var i = Math.floor(Math.random() * 3);
         if (i == 0) this.setState_difficulty("easy");
         else if (i == 1) this.setState_difficulty("medium");
         else this.setState_difficulty("hard");
         break;
+
+      //easy mode
       case 2:
         this.setState_difficulty("easy");
         break;
+
+      //medium mode
       case 3:
         this.setState_difficulty("medium");
         break;
+
+      //hard mode
       case 4:
         this.setState_difficulty("hard");
         break;
@@ -273,16 +283,16 @@ export default class QuestionPage extends Component {
           i = this.generateRandom(hard, chosenhard);
           break;
       }
-      //console.warn(i);
+
+      //download json data from Firebase
       firebase
         .database()
-        .ref("/" + this.difficulty + "/" + i)
+        .ref("/questionBank/" +"easy" + "/" + "1")
         .once("value")
         .then(
           function(snap) {
             this.setState({
-              src: snap.val().url,
-              ans: snap.val().ans,
+              data: snap.val(),
               shownext: false,
               renew: false,
               correct: false,
@@ -309,7 +319,7 @@ export default class QuestionPage extends Component {
     var options = [];
     for (let i = 0; i < 4; i++) {
       var option = String.fromCharCode("A".charCodeAt() + i);
-      let correctoption = option.localeCompare(this.state.ans);
+      let correctoption = option.localeCompare(this.state.data.answer);
       options.push(
         <View key={option}>
           {this.state.renew ? null : (
@@ -340,15 +350,15 @@ export default class QuestionPage extends Component {
   //   return condition? content:null;
   // }
 
-  _onLayout() {
-    if (this.state.src) {
-      Image.getSize(this.state.src, (w, h) => {
-        this.setState({
-          imageHeight: Dimensions.get("window").width * h / w
-        });
-      });
-    }
-  }
+  // _onLayout() {
+  //   if (this.state.src) {
+  //     Image.getSize(this.state.src, (w, h) => {
+  //       this.setState({
+  //         imageHeight: Dimensions.get("window").width * h / w
+  //       });
+  //     });
+  //   }
+  // }
 
   drawerContent = () => {
   return(
@@ -461,28 +471,15 @@ export default class QuestionPage extends Component {
         >
           <View
           style={{ flex: 2, justifyContent: "center" }}
-          onLayout={this._onLayout()}
         >
         
+          {/* display question */}
           <ScrollView>
-            {this.state.renew ? null : (
-              <FastImage
-                source={
-                  Platform.OS === "ios"
-                    ? {
-                        url: this.state.src,
-                        //headers:{ Authorization: 'someAuthToken' },
-                        priority: FastImage.priority.low
-                      }
-                    : {
-                        uri: this.state.src,
-                        //headers:{ Authorization: 'someAuthToken' },
-                        priority: FastImage.priority.low
-                      }
-                }
-                style={[styles.image, { height: this.state.imageHeight }]}
-              />
-            )}
+            <Text style={{fontSize:24, marginHorizontal: 20, marginTop:5}}>{this.state.data.content}{"\n"}</Text>
+            <Text style={{fontSize:24, marginHorizontal: 20}}>(A) {"  "}{this.state.data.A}</Text>
+            <Text style={{fontSize:24, marginHorizontal: 20}}>(B) {"  "}{this.state.data.B}</Text>
+            <Text style={{fontSize:24, marginHorizontal: 20}}>(C) {"  "}{this.state.data.C}</Text>
+            <Text style={{fontSize:24, marginHorizontal: 20}}>(D) {"  "}{this.state.data.D}</Text>
           </ScrollView>
         </View>
         
