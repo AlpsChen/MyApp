@@ -19,7 +19,7 @@ export default class Loading extends Component {
         firebase.auth().onAuthStateChanged(user => {
             user? this.props.navigation.navigate('First',{mode: 0,qnums: 10}):this.props.navigation.navigate('Login')
           })
-      }, 1500)
+      }, 500)
   }
   render() {
     return (

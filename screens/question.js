@@ -14,7 +14,6 @@ import {
   TouchableHighlight,
 } from "react-native";
 import firebase from "react-native-firebase";
-import FastImage from "react-native-fast-image";
 import ChoiceButton from "../components/choicebutton";
 import MCIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import FIcon from "react-native-vector-icons/Foundation";
@@ -22,6 +21,7 @@ import EIcon from "react-native-vector-icons/Entypo";
 import Orientation from "react-native-orientation";
 import SketchDraw from "react-native-sketch-draw";
 import Drawer from "react-native-drawer";
+import MathJax from 'react-native-mathjax';
 //import images from "../../questions";
 
 const iosConfig = {
@@ -35,10 +35,9 @@ const iosConfig = {
 };
 //firebase.initializeApp(iosConfig);
 
-(easy = 18), (medium = 5), (hard = 14);
-var choseneasy = [easy],
-    chosenmedium = [medium],
-    chosenhard = [hard];
+var chosenEasy = [100],
+    chosenMedium = [100],
+    chosenHard = [100];
 const bgcolor = "#FFE4B5";
 const sdc = SketchDraw.constants;
 const {height, width} = Dimensions.get("screen");
@@ -68,9 +67,9 @@ export default class QuestionPage extends Component {
     //this.marked = ["a"];
     this.state = {
       data: "",
+      total: 0,
       shownext: false,
       renew: false,
-      imageHeight: 0,
       correct: false,
       penColor: "#87CEFA",
       tool: sdc.toolType.pen.id,
@@ -78,21 +77,23 @@ export default class QuestionPage extends Component {
       mark: false,
     };
     Orientation.lockToLandscape();
-    choseneasy.fill(false);
-    chosenmedium.fill(false);
-    chosenhard.fill(false);
-    this.next();
+    chosenEasy.fill(false);
+    chosenMedium.fill(false);
+    chosenHard.fill(false);
+    //this.next();
   }
 
   componentWillMount() {
     Orientation.lockToLandscape();
+    this.init();
+    this.next();
   }
 
   static navigationOptions = ({ navigation }) => {
     const { params } = navigation.state;
     var mark = false;
     return {
-      title: "題目：" + params.displaynum + "/" + params.qnums,
+      title: params.displaynum? "題目：" + params.displaynum + "/" + params.qnums:null,
       headerStyle: {
         backgroundColor: "#FAFAD2"
       },
@@ -161,6 +162,12 @@ export default class QuestionPage extends Component {
     };
   };
 
+  //initialize
+  init = () => {
+
+  }
+
+  //mark the question
   onClickMark = (now) => {
     if(now){ //unmark question
       this.props.navigation.setParams({mark: false})
@@ -257,10 +264,11 @@ export default class QuestionPage extends Component {
     //console.warn(this.state.difficulty);
   }
 
-  generateRandom(currentDifficulty, currentArray) {
+  generateRandom(currentTotal, currentArray) {
     do {
-      var i = Math.floor(Math.random() * currentDifficulty);
+      var i = Math.floor(Math.random() * currentTotal) + 1;
     } while (currentArray[i]);
+    
     currentArray[i] = true;
     return i;
   }
@@ -270,24 +278,41 @@ export default class QuestionPage extends Component {
       this.num++;
       //console.warn(this.state.correct);
       this.determine_next();
+      //the total number of question of the current difficulty
+      firebase.database().ref("/questionBank/" + this.difficulty).once("value").then(
+        (snap) => {
+          this.setState({
+            total: snap.val().total,
+          }).bind(this)
+        }
+      );
+      console.log(this.total)
+      var starArray = this.displaystars();
+      this.props.navigation.setParams({
+        displaynum: this.num,
+        difficult: this.difficulty,
+        icons: starArray,
+        onClickMark: this.onClickMark.bind(this),
+        mark: false,
+      });
 
       let i;
       switch (this.difficulty) {
         case "easy":
-          i = this.generateRandom(easy, choseneasy);
+          i = this.generateRandom(this.state.total, chosenEasy);
           break;
         case "medium":
-          i = this.generateRandom(medium, chosenmedium);
+          i = this.generateRandom(this.state.total, chosenMedium);
           break;
         case "hard":
-          i = this.generateRandom(hard, chosenhard);
+          i = this.generateRandom(this.state.total, chosenHard);
           break;
       }
 
       //download json data from Firebase
       firebase
         .database()
-        .ref("/questionBank/" +"easy" + "/" + "1")
+        .ref("/questionBank/" + this.difficulty + "/" + "5")
         .once("value")
         .then(
           function(snap) {
@@ -300,14 +325,6 @@ export default class QuestionPage extends Component {
             });
           }.bind(this)
         );
-      var starArray = this.displaystars();
-      this.props.navigation.setParams({
-        displaynum: this.num,
-        difficult: this.difficulty,
-        icons: starArray,
-        onClickMark: this.onClickMark.bind(this),
-        mark: false,
-      });
     } else {
       //go to scoring page
       var { navigate } = this.props.navigation;
@@ -433,7 +450,6 @@ export default class QuestionPage extends Component {
 )
 }
 
-
   renderColorButton = color => {
     const active = color === this.state.penColor;
 
@@ -451,13 +467,83 @@ export default class QuestionPage extends Component {
     );
   };
 
+  renderOptions = () => {
+    var {data} = this.state;
+    var {width} = Dimensions.get("window")
+    if(data.A){
+      if(data.A.length + data.B.length + data.C.length + data.D.length < 20){
+        return(
+          <Text style={{fontSize:24, marginHorizontal: 20}}>(A) {"  "}{this.state.data.A}{"    "} (B) {"  "}{this.state.data.B}{"    "} (C) {"  "}{this.state.data.C}{"    "} (D) {"  "}{this.state.data.D}</Text>
+        )
+      }
+      else{
+        return(
+          <View>
+            <MathJax
+              style={{marginHorizontal: 20}}
+              html={"$(A)"+this.state.data.A+"$"}
+              customStyle={`
+                * {
+                  font-family: 'Times New Roman';
+                  font-size: 24;
+                  }
+              `}
+              enableBaseUrl={false}
+              //enableAnimation={false}
+            />
+            <MathJax
+              style={{marginHorizontal: 20}}
+              html={"$(B)"+this.state.data.B+"$"}
+              customStyle={`
+                * {
+                  font-family: 'Times New Roman';
+                  font-size: 24;
+                  }
+              `}
+              enableBaseUrl={false}
+              //enableAnimation={false}
+            />
+            <MathJax
+              style={{marginHorizontal: 20}}
+              html={"$(C)"+this.state.data.C+"$"}
+              customStyle={`
+                * {
+                  font-family: 'Times New Roman';
+                  font-size: 24;
+                  }
+              `}
+              enableBaseUrl={false}
+              //enableAnimation={false}
+            />
+            <MathJax
+              style={{marginHorizontal: 20}}
+              html={"$(D)"+this.state.data.D+"$"}
+              customStyle={`
+                * {
+                  font-family: 'Times New Roman';
+                  font-size: 24;
+                  }
+              `}
+              enableBaseUrl={false}
+              //enableAnimation={false}
+            />
+          </View>  
+        )
+      }
+    }
+  }
+
   render() {
-    //Image.prefetch({uri:this.state.src});
     return (
       
       <View style={styles.bg}>
         
-        {this.state.renew? null:(<Drawer
+        {this.state.renew? (
+          <View style={{flex:1}}>
+            <View style={{flex:2}}></View>
+            <View style={styles.buttons}></View>
+          </View>
+        ):(<Drawer
           type="overlay"
           open={this.state.showModal}
           openDrawerOffset={0.2}
@@ -469,17 +555,28 @@ export default class QuestionPage extends Component {
           onCloseStart={()=>{this.setState({showModal:false})}}
           content={this.drawerContent()}
         >
-          <View
-          style={{ flex: 2, justifyContent: "center" }}
-        >
-        
+          
+          <View style={{ flex: 2, justifyContent: "center" }}>
           {/* display question */}
           <ScrollView>
-            <Text style={{fontSize:24, marginHorizontal: 20, marginTop:5}}>{this.state.data.content}{"\n"}</Text>
-            <Text style={{fontSize:24, marginHorizontal: 20}}>(A) {"  "}{this.state.data.A}</Text>
-            <Text style={{fontSize:24, marginHorizontal: 20}}>(B) {"  "}{this.state.data.B}</Text>
-            <Text style={{fontSize:24, marginHorizontal: 20}}>(C) {"  "}{this.state.data.C}</Text>
-            <Text style={{fontSize:24, marginHorizontal: 20}}>(D) {"  "}{this.state.data.D}</Text>
+            {this.state.data?(
+            <View>
+            <MathJax
+              style={{marginHorizontal: 20, marginTop:5, flex:1}}
+              html={"$"+this.state.data.content+"$"}
+              customStyle={`
+                * {
+                  font-family: 'Times New Roman';
+                  font-size: 20;
+                  }
+              `}
+              enableBaseUrl={false}
+              enableAnimation={false}
+              scalesPageToFit={Platform.OS === 'android' ? true : false}
+
+            />
+            {this.renderOptions()}
+            </View>):null}
           </ScrollView>
         </View>
         
@@ -524,7 +621,7 @@ const styles = StyleSheet.create({
   bg: {
     flex: 1,
     //justifyContent: 'space-around',
-    backgroundColor: "#FFFFFF"
+    backgroundColor: "#FFF"
   },
   image: {
     width: "100%"
@@ -561,3 +658,5 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
 });
+
+
