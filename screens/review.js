@@ -8,90 +8,108 @@ import {
   ScrollView,
 } from 'react-native'
 import Swiper from 'react-native-swiper'
+import firebase from "react-native-firebase"
 const { width } = Dimensions.get('window')
 
 export default class ReviewPage extends Component {
-    constructor(props){
-        super(props);
-        this.imageHeight = 0;
-        this.state = {
-        
-            src: "",
-        }
-    }
+  constructor(props){
+
+      super(props);
+      this.index = 0;
+      this.difficulty = "";
+      //this.arr = [];
+      this.state = {
+        data: "",
+        arr: [1],
+      }
+  }
     
-    static navigationOptions = {
-        header: null,
-        gesturesEnabled: false,
-      };
-    renderPagination = (index, total, context) => {
-        return (
-          <View style={styles.paginationStyle}>
-            <Text style={{ color: 'grey' }}>
-              <Text style={styles.paginationText}>{index + 1}</Text>/{total}
-            </Text>
-          </View>
-        )
-      }
-      image = (i) => {
-        let {params} = this.props.navigation.state;
-          return(
-            <View style={styles.slide} onLayout={this._onLayout(i)}>
-              <ScrollView>
-                <Image style={[styles.image, {height:this.imageHeight}]} source={{uri: params.marked[i].src}} />
-              </ScrollView>
-          </View>
-          )
-      }
-  renderImages = () => {
+  static navigationOptions = {
+    header: null,
+    gesturesEnabled: false,
+  };
+  
+  componentWillMount() {
     let {params} = this.props.navigation.state;
     let qnums = params.marked.length;
-    let arr = [];
-      for(let i=0; i<qnums; i++){
-        
-        arr.push(this.image(i)) 
-      }
+    for(let i=0; i<qnums; i++){
+      this.question(i)
+      console.log(i)
+    }
     
-    return (arr);
   }
 
-  _onLayout = (i) => {
-      let {params} = this.props.navigation.state;
-      Image.getSize(params.marked[i].src, (w, h) => {
-        
-          this.imageHeight =  Dimensions.get("window").width * h / w
-      });
+  renderPagination = (index, total, context) => {
+    return (
+      <View style={styles.paginationStyle}>
+        <Text style={{ color: 'grey' }}>
+          <Text style={styles.paginationText}>{index + 1}</Text>/{total}
+        </Text>
+      </View>
+    )
+  }
+  question = (i) => {
+    let {params} = this.props.navigation.state;
+    let difficulty = params.marked[i].difficulty;
+    let index = params.marked[i].index;
+    firebase
+      .database()
+      .ref("/questionBank/" + difficulty + "/" + index)
+      .once("value")
+      .then((snap) => {
+          this.setState({
+            data: snap.val()
+          })
+        }
+      ).then( ()=>{
+        this.setState(prevState => {
+          arr: [prevState, this.state.data]
+        })
+        //this.state.arr.push(this.state.data)
+        console.log("b")
+      })
+  }
+
+  renderMarked = () => {
+    var tmp = []
+    for(let i=0; i<this.state.arr.length; i++){
+      tmp.push(<View style={styles.slide}>
+        <ScrollView>
+          <Text style={styles.text}>{this.state.arr[i].content}</Text>
+        </ScrollView>
+      </View>)
+    }
+    console.log(tmp)
+    return tmp;
   }
 
   render () {
-    //let qnums = this.props.navigation.state.params.marked.length;
+    var {params} = this.props.navigation.state;
     return (
         <View style={styles.slide}>
         {/* {qnums?  */}
         <Swiper
           style={styles.wrapper}
-          renderPagination={this.renderPagination}
+          renderPagination={this.renderPagination.bind(this)}
           loop={false}
         >
-          {this.renderImages()}
+          {this.renderMarked()}
+          
         </Swiper>
-        {/* :
-        null} */}
+        
         </View>
     )
   }
 }
 
 const styles = StyleSheet.create({
-    wrapper: {
-    },
     slide: {
       flex: 1,
       justifyContent: 'center',
-      backgroundColor: 'transparent'
+      backgroundColor: '#FFF'
     },
     text: {
-      color: '#fff',
+      color: '#000',
       fontSize: 30,
       fontWeight: 'bold'
     },
@@ -107,7 +125,7 @@ const styles = StyleSheet.create({
       right: 10
     },
     paginationText: {
-      color: 'white',
+      color: '#000',
       fontSize: 20
     }
   })

@@ -58,6 +58,7 @@ export default class ScoringPage extends Component {
   }
   render() {
     const { navigate } = this.props.navigation;
+    let { params } = this.props.navigation.state;
     return (
       <View style={styles.bg}>
       <ImageBackground 
@@ -83,7 +84,7 @@ export default class ScoringPage extends Component {
         <View style={{flexDirection:"row"}}>
         <TouchableOpacity
             onPress={() => {
-              navigate("ReviewPage", {marked: this.props.navigation.state.params.marked})
+              navigate("ReviewPage", {marked: [{difficulty: "easy", index: 1}, {difficulty: "easy", index: 2}]})
             }}
             style={[styles.button,{backgroundColor: this.state.finished? "#FFE4B5":"transparant"}]}
           >

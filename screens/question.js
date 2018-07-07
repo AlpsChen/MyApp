@@ -41,7 +41,6 @@ var chosenEasy = [100],
 const bgcolor = "#FFE4B5";
 const sdc = SketchDraw.constants;
 const {height, width} = Dimensions.get("screen");
-var marked = [];
 
 const ImageHeader = props => {
   return(
@@ -60,27 +59,26 @@ const ImageHeader = props => {
 export default class QuestionPage extends Component {
   constructor(props) {
     super(props);
-    this.num = 0;
-    this.score = 0;
-    this.difficulty = "easy";
-    this.image = "";
-    //this.marked = ["a"];
+    this.num = 0;                   // the nth question
+    this.score = 0;                 // correct number of questions
+    this.difficulty = "easy";       // current difficulty
+    this.index = 0;                 // index of current question in Firebase
+    this.marked = [];               // records the marked questions
     this.state = {
-      data: "",
-      total: 0,
-      shownext: false,
-      renew: false,
-      correct: false,
-      penColor: "#87CEFA",
-      tool: sdc.toolType.pen.id,
-      showModal: false,
-      mark: false,
+      data: "",                     // data of current question
+      total: 0,                     // total question of current difficulty
+      shownext: false,              // true to show the "next" button
+      renew: false,                 // true to refresh the question display and buttons
+      correct: false,               // true if answered correctly
+      penColor: "#87CEFA",          // pen color (default is light blue)
+      tool: sdc.toolType.pen.id,    // default tool is pen
+      showModal: false,             // true to show modal (計算紙)
+      mark: false,                  // true if current question is marked
     };
     Orientation.lockToLandscape();
     chosenEasy.fill(false);
     chosenMedium.fill(false);
     chosenHard.fill(false);
-    //this.next();
   }
 
   componentWillMount() {
@@ -130,9 +128,6 @@ export default class QuestionPage extends Component {
             size={24}
             style={{marginTop:3}}
           >
-          {/* <Text style={{ color: "black", fontWeight: "bold", fontSize: 18 }}>
-              標記
-            </Text> */}
           </MCIcon>
           
           :
@@ -145,9 +140,6 @@ export default class QuestionPage extends Component {
             size={24}
             style={{marginTop:3}}
           >
-            {/* <Text style={{ color: "black", fontWeight: "bold", fontSize: 18 }}>
-              標記
-            </Text> */}
           </MCIcon>}
         </View>
       ),
@@ -171,11 +163,11 @@ export default class QuestionPage extends Component {
   onClickMark = (now) => {
     if(now){ //unmark question
       this.props.navigation.setParams({mark: false})
-      marked.pop()
+      this.marked.pop()
     }
     else{ //mark question
       this.props.navigation.setParams({mark: true})
-      marked.push({src: this.state.src, ans: this.state.ans})
+      this.marked.push({difficulty: this.difficulty, index: this.index})
     }
   }
 
@@ -266,11 +258,10 @@ export default class QuestionPage extends Component {
 
   generateRandom(currentTotal, currentArray) {
     do {
-      var i = Math.floor(Math.random() * currentTotal) + 1;
-    } while (currentArray[i]);
+      this.index = Math.floor(Math.random() * currentTotal) + 1;
+    } while (currentArray[this.index]);
     
-    currentArray[i] = true;
-    return i;
+    currentArray[this.index] = true;
   }
 
   next() {
@@ -296,23 +287,22 @@ export default class QuestionPage extends Component {
         mark: false,
       });
 
-      let i;
       switch (this.difficulty) {
         case "easy":
-          i = this.generateRandom(this.state.total, chosenEasy);
+          this.generateRandom(this.state.total, chosenEasy);
           break;
         case "medium":
-          i = this.generateRandom(this.state.total, chosenMedium);
+          this.generateRandom(this.state.total, chosenMedium);
           break;
         case "hard":
-          i = this.generateRandom(this.state.total, chosenHard);
+          this.generateRandom(this.state.total, chosenHard);
           break;
       }
 
       //download json data from Firebase
       firebase
         .database()
-        .ref("/questionBank/" + this.difficulty + "/" + "5")
+        .ref("/questionBank/" + this.difficulty + "/" + this.index)
         .once("value")
         .then(
           function(snap) {
@@ -328,7 +318,7 @@ export default class QuestionPage extends Component {
     } else {
       //go to scoring page
       var { navigate } = this.props.navigation;
-      navigate("Third", { score: this.score, marked: marked });
+      navigate("Third", { score: this.score, marked: this.marked });
     }
   }
 
